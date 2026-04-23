@@ -1,65 +1,102 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import WeekNavigator from '@/components/WeekNavigator';
+import DayCard from '@/components/DayCard';
+import SummaryBar from '@/components/SummaryBar';
+import SettingsModal from '@/components/SettingsModal';
+import { Button } from '@/components/ui/button';
+import { getWeekStart, getWeekDates, getWeekKey, navigateWeek } from '@/lib/date-helpers';
+import { getDayType } from '@/lib/holidays';
+import { calcWeek } from '@/lib/calculations';
+import { loadSettings, loadWeek, saveWeek } from '@/lib/storage';
+import type { WorkDay, Settings } from '@/types';
+
+function buildDefaultWeek(dates: string[]): WorkDay[] {
+  return dates.map((date) => ({
+    date,
+    dayType: getDayType(date),
+    startTime: null,
+    endTime: null,
+    breakMinutes: 60,
+  }));
+}
 
 export default function Home() {
+  const [weekStart, setWeekStart] = useState<Date>(() => getWeekStart(new Date()));
+  const [days, setDays] = useState<WorkDay[]>([]);
+  const [settings, setSettings] = useState<Settings>({
+    weekdayRate: 0,
+    weekendMultiplier: 1.25,
+    holidayMultiplier: 2.0,
+  });
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  useEffect(() => {
+    const s = loadSettings();
+    setSettings(s);
+    if (s.weekdayRate === 0) setSettingsOpen(true);
+  }, []);
+
+  useEffect(() => {
+    const dates = getWeekDates(weekStart);
+    const key = getWeekKey(weekStart);
+    const saved = loadWeek(key);
+    if (saved) {
+      setDays(saved.map((d) => ({ ...d, dayType: getDayType(d.date) })));
+    } else {
+      setDays(buildDefaultWeek(dates));
+    }
+  }, [weekStart]);
+
+  const handleDayChange = useCallback(
+    (index: number, updated: WorkDay) => {
+      setDays((prev) => {
+        const next = [...prev];
+        next[index] = updated;
+        saveWeek(getWeekKey(weekStart), next);
+        return next;
+      });
+    },
+    [weekStart]
+  );
+
+  const handleNavigate = useCallback((dir: -1 | 1) => {
+    setWeekStart((prev) => navigateWeek(prev, dir));
+  }, []);
+
+  const summary = calcWeek(days, settings);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main className="mx-auto max-w-lg pb-24">
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border px-4 py-3 flex items-center justify-between">
+        <h1 className="text-lg font-bold tracking-tight">Wage Calculator</h1>
+        <Button variant="ghost" size="sm" onClick={() => setSettingsOpen(true)}>
+          ⚙️ Settings
+        </Button>
+      </div>
+
+      <div className="px-4 pt-4 space-y-3">
+        <WeekNavigator weekStart={weekStart} onNavigate={handleNavigate} />
+
+        {days.map((day, i) => (
+          <DayCard
+            key={day.date}
+            day={day}
+            settings={settings}
+            onChange={(updated) => handleDayChange(i, updated)}
+          />
+        ))}
+      </div>
+
+      <SummaryBar summary={summary} settings={settings} />
+
+      <SettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        settings={settings}
+        onSave={setSettings}
+      />
+    </main>
   );
 }
