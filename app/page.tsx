@@ -57,6 +57,10 @@ export default function Home() {
     weekdayRate: 0,
     weekendMultiplier: 1.25,
     holidayMultiplier: 2.0,
+    taxCategory: 'resident',
+    applyMedicareLevy: true,
+    tfnSubmitted: true,
+    employerRegistered: true,
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
 
