@@ -35,3 +35,19 @@ export function formatDayLabel(dateStr: string): string {
   const date = new Date(dateStr + 'T00:00:00');
   return format(date, 'EEE d MMM');
 }
+
+// Returns [firstWeekStart, secondWeekStart] of the fortnight containing `weekStart`.
+// Anchored on the current calendar week (today's ISO week = first week of its fortnight).
+export function getFortnightPair(weekStart: Date): [Date, Date] {
+  const anchor = startOfISOWeek(new Date());
+  const diffWeeks = Math.round((weekStart.getTime() - anchor.getTime()) / (7 * 86400000));
+  const pairIndex = Math.floor(diffWeeks / 2);
+  const first = addDays(anchor, pairIndex * 14);
+  const second = addDays(first, 7);
+  return [first, second];
+}
+
+export function formatFortnightLabel(first: Date, second: Date): string {
+  const end = addDays(second, 6);
+  return `${format(first, 'MMM d')} – ${format(end, 'MMM d, yyyy')}`;
+}

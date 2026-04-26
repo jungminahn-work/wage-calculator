@@ -1,4 +1,5 @@
 import type { WorkDay, Settings, DaySummary, WeekSummary } from '@/types';
+import { estimateWeeklyTax } from './tax';
 
 export function calcDay(day: WorkDay, settings: Settings): DaySummary {
   if (!day.startTime || !day.endTime) {
@@ -33,9 +34,14 @@ export function calcDay(day: WorkDay, settings: Settings): DaySummary {
 
 export function calcWeek(days: WorkDay[], settings: Settings): WeekSummary {
   const summaries = days.map((d) => calcDay(d, settings));
+  const totalHours = summaries.reduce((acc, s) => acc + s.hours, 0);
+  const totalPay = summaries.reduce((acc, s) => acc + s.pay, 0);
+  const estimatedTax = estimateWeeklyTax(totalPay, settings);
   return {
-    totalHours: summaries.reduce((acc, s) => acc + s.hours, 0),
-    totalPay: summaries.reduce((acc, s) => acc + s.pay, 0),
+    totalHours,
+    totalPay,
+    estimatedTax,
+    netPay: Math.max(0, totalPay - estimatedTax),
   };
 }
 

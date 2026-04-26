@@ -5,7 +5,7 @@ interface BreakSelectProps {
   onChange: (value: number) => void;
 }
 
-const BREAK_OPTIONS = [60, 75, 90, 105, 120, 135, 150];
+const BREAK_OPTIONS = [0, 60, 75, 90, 105, 120, 135, 150];
 
 export default function BreakSelect({ value, onChange }: BreakSelectProps) {
   return (
@@ -16,7 +16,7 @@ export default function BreakSelect({ value, onChange }: BreakSelectProps) {
     >
       {BREAK_OPTIONS.map((min) => (
         <option key={min} value={min}>
-          {min} min
+          {min === 0 ? 'None' : `${min} min`}
         </option>
       ))}
     </select>
