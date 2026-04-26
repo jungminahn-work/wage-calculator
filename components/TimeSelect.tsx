@@ -7,11 +7,14 @@ interface TimeSelectProps {
 }
 
 function generateTimes(): string[] {
+  // 10:00 ~ 21:30, 15-minute intervals
   const times: string[] = [];
-  for (let h = 0; h < 24; h++) {
-    for (let m = 0; m < 60; m += 15) {
-      times.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
-    }
+  const startMinutes = 10 * 60;
+  const endMinutes = 21 * 60 + 30;
+  for (let m = startMinutes; m <= endMinutes; m += 15) {
+    const h = Math.floor(m / 60);
+    const mm = m % 60;
+    times.push(`${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}`);
   }
   return times;
 }

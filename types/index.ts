@@ -8,15 +8,23 @@ export interface WorkDay {
   breakMinutes: number;     // 60~150
 }
 
+export type TaxCategory = 'resident' | 'whm' | 'foreign_resident';
+
 export interface Settings {
   weekdayRate: number;
   weekendMultiplier: number;
   holidayMultiplier: number;
+  taxCategory: TaxCategory;
+  applyMedicareLevy: boolean;   // resident only
+  tfnSubmitted: boolean;        // whm only
+  employerRegistered: boolean;  // whm only
 }
 
 export interface WeekSummary {
   totalHours: number;
-  totalPay: number;
+  totalPay: number;       // gross
+  estimatedTax: number;
+  netPay: number;
 }
 
 export interface DaySummary {
